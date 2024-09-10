@@ -1,0 +1,198 @@
+---
+title: "quantitative analysis"
+author: "dr obaid"
+format: docx
+editor: visual
+---
+
+# Load required libraries
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+library(tidyverse)
+library(broom)
+library(corrplot)
+library(readxl)  # For reading Excel files
+library(writexl) # For writing Excel files
+library(car)     # For VIF
+library(lavaan)  # For SEM
+
+```
+
+# Read data from Excel file
+
+```{r}
+data <- read_excel("D:/d drive/MPHIL ECO/applied economics/islamabad data.xlsx")
+
+```
+
+# Display structure and summary of the data
+
+```{r}
+str(data)
+summary(data)
+```
+
+# Check if the required columns exist and are numeric
+
+```{r}
+if (!all(c("Age", "Average_Monthly_Income") %in% colnames(data))) {
+  stop("Required columns are missing in the data")
+}
+```
+
+# Convert to numeric if they are not
+
+```{r}
+data <- data %>%
+  mutate(Age = as.numeric(Age),
+         Average_Monthly_Income = as.numeric(Average_Monthly_Income))
+```
+
+# Remove rows with NA values in key columns
+
+```{r}
+data_clean <- data %>%
+  filter(!is.na(Age), !is.na(Average_Monthly_Income))
+
+```
+
+# Check for any remaining issues
+
+```{r}
+summary(data_clean)
+
+# Descriptive Statistics
+print(summary(data_clean))
+print(head(data_clean))
+print(str(data_clean))
+
+```
+
+# Visualize Data
+
+# Histograms
+
+```{r}
+hist(data_clean$Age, main = "Histogram of Age", xlab = "Age", breaks = 20)
+hist(data_clean$Average_Monthly_Income, main = "Histogram of Average Monthly Income", xlab = "Average Monthly Income", breaks = 20)
+
+# Boxplots
+boxplot(Average_Monthly_Income ~ Marital_Status, data = data_clean, main = "Boxplot of Average Monthly Income by Marital Status", xlab = "Marital Status", ylab = "Average Monthly Income")
+
+```
+
+# Correlation Matrix
+
+```{r}
+if (nrow(data_clean) > 1) {
+  correlation_matrix <- cor(data_clean[, c("Age", "Average_Monthly_Income")], use = "complete.obs")
+  corrplot(correlation_matrix, method = "circle")
+} else {
+  print("Not enough data to compute correlation matrix")
+}
+
+```
+
+# 
+
+# Inferential Statistics
+
+# Hypothesis Testing (Example: T-test)
+
+```{r}
+if (length(unique(data_clean$Marital_Status)) == 2) {
+  t_test_result <- t.test(Average_Monthly_Income ~ Marital_Status, data = data_clean)
+  t_test_result_tidy <- tidy(t_test_result)
+  print(t_test_result_tidy)
+} else {
+  print("T-test not applicable for Marital_Status with more than two levels")
+}
+
+# ANOVA
+anova_result <- aov(Average_Monthly_Income ~ Education, data = data_clean)
+anova_result_summary <- summary(anova_result)
+print(anova_result_summary)
+
+# Regression Analysis
+# Linear Regression
+lm_model <- lm(Average_Monthly_Income ~ Age + Education, data = data_clean)
+lm_model_summary <- summary(lm_model)
+print(lm_model_summary)
+
+# Assumptions Checking
+# Check for Multicollinearity
+vif_values <- vif(lm_model)
+print(vif_values)
+
+# Check for Heteroscedasticity
+plot(lm_model, which = 1)
+```
+
+# Factor Analysis or Cluster Analysis
+
+```{r}
+factor_analysis <- factanal(data_clean[, c("Age", "Average_Monthly_Income", "Education")], factors = 1, rotation = "varimax")
+
+# Print the factor analysis result
+print(factor_analysis)
+
+# Cluster Analysis
+kmeans_model <- kmeans(data_clean[, c("Age", "Average_Monthly_Income")], centers = 3)
+print(kmeans_model)
+```
+
+# Structural Equation Modeling (SEM)
+
+```{r}
+summary(data_clean)  # Check for missing values and outliers
+
+# Simplify the SEM model even further
+model_simplified <- "
+  # Measurement Model
+  Latent_Variable1 =~ Age
+  Latent_Variable2 =~ Average_Monthly_Income + Comfortability_in_dealings_and_services_in_host_language
+  Latent_Variable3 =~ Sense_of_mutual_trust_and_reciprocity_within_own_community_F
+
+  # Structural Model
+  Latent_Variable1 ~ Latent_Variable2
+  Latent_Variable1 ~ Latent_Variable3
+  Latent_Variable2 ~ Latent_Variable3
+"
+
+# Run SEM analysis with the further simplified model
+sem_result_simplified <- sem(model_simplified, data = data_clean)
+
+# Check the SEM results
+summary(sem_result_simplified, standardized = TRUE, fit.measures = TRUE)
+
+```
+
+# Check the column names of your dataset
+
+```{r}
+print(names(data_clean))
+```
+
+# Comparative Analysis
+
+```{r}
+if (length(unique(data_clean$Refugee_Status)) == 2) {
+  t_test_group_diff <- t.test(Average_Monthly_Income ~ Refugee_Status, data = data_clean)
+  t_test_group_diff_tidy <- tidy(t_test_group_diff)
+  print(t_test_group_diff_tidy)
+} else {
+  print("T-test not applicable for Refugee_Status with more than two levels")
+}
+
+# Robustness Checks and Sensitivity Analysis
+# Alternative Specifications
+lm_model_alt <- lm(Average_Monthly_Income ~ Age * Education, data = data_clean)
+lm_model_alt_summary <- summary(lm_model_alt)
+print(lm_model_alt_summary)
+
+
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
